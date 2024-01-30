@@ -61,8 +61,6 @@ class LLaVAEngine(LLMEngine):
         else:
             pixel_values = None
 
-        # [NOTE] Aakash: works one only one GPU for now, not using init_workers_ray 
-        self._init_workers()
         # Check the validation of the input. And expand each image token to the
         # number of tokens per image. So the scheduler can allocate proper resources.
         num_workers = len(self.workers)
