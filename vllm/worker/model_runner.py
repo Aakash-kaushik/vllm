@@ -440,10 +440,23 @@ class ModelRunner:
             # all decodes.
             is_prompt = seq_group_metadata_list[0].is_prompt
             # Prepare input tensors.
+            extra_kwargs = {}
             if is_prompt:
                 (input_tokens, input_positions, input_metadata, prompt_lens,
                  subquery_lens, lora_index_mapping, lora_prompt_mapping,
                  lora_requests) = self._prepare_prompt(seq_group_metadata_list)
+                    # Collect extra data for each prompt from seq_group_metadata_list. e.g. image pixel values, image features
+                if input_tokens.shape[1] > 1:
+                    extra_kwargs = defaultdict(
+                        lambda: [None for _ in range(input_tokens.shape[0])])
+                    # Not in the stage of  generation with cache
+                    for i, seq_group_metadata in enumerate(
+                            seq_group_metadata_list):
+                        extra_data = seq_group_metadata.seq_data[list(
+                            seq_group_metadata.seq_data.keys())[0]].extra_data
+                        if extra_data is not None:
+                            for key, v in extra_data.items():
+                                extra_kwargs[key][i] = v
             else:
                 (input_tokens, input_positions, input_metadata,
                  lora_index_mapping, lora_prompt_mapping,
@@ -512,7 +525,7 @@ class ModelRunner:
                 perform_sampling=False,
             )
 
-        return input_tokens, input_positions, input_metadata, sampling_metadata, lora_requests, lora_mapping
+        return input_tokens, input_positions, input_metadata, sampling_metadata, lora_requests, lora_mapping, extra_kwargs
 
     @torch.inference_mode()
     def execute_model(
@@ -520,7 +533,7 @@ class ModelRunner:
         seq_group_metadata_list: Optional[List[SequenceGroupMetadata]],
         kv_caches: List[Tuple[torch.Tensor, torch.Tensor]],
     ) -> Optional[SamplerOutput]:
-        input_tokens, input_positions, input_metadata, sampling_metadata, lora_requests, lora_mapping = (
+        input_tokens, input_positions, input_metadata, sampling_metadata, lora_requests, lora_mapping, extra_kwargs = (
             self.prepare_input_tensors(seq_group_metadata_list))
 
         if self.lora_config:
@@ -554,28 +567,9 @@ class ModelRunner:
     ) -> SamplerOutput:
         # NOTE: We assume that all sequences in the group are all prompts or
         # all decodes.
-        is_prompt = seq_group_metadata_list[0].is_prompt
         # Prepare input tensors.
-        extra_kwargs = {}
-        if is_prompt:
-            inputs = self._prepare_prompt(seq_group_metadata_list)
-            input_tokens, input_positions, input_metadata = inputs
-
-            # Collect extra data for each prompt from seq_group_metadata_list. e.g. image pixel values, image features
-            if input_tokens.shape[1] > 1:
-                extra_kwargs = defaultdict(
-                    lambda: [None for _ in range(input_tokens.shape[0])])
-                # Not in the stage of  generation with cache
-                for i, seq_group_metadata in enumerate(
-                        seq_group_metadata_list):
-                    extra_data = seq_group_metadata.seq_data[list(
-                        seq_group_metadata.seq_data.keys())[0]].extra_data
-                    if extra_data is not None:
-                        for key, v in extra_data.items():
-                            extra_kwargs[key][i] = v
-        else:
-            inputs = self._prepare_decode(seq_group_metadata_list)
-            input_tokens, input_positions, input_metadata = inputs
+        input_tokens, input_positions, input_metadata, sampling_metadata, lora_requests, lora_mapping, extra_kwargs = (
+        self.prepare_input_tensors(seq_group_metadata_list))
 
         # Execute the model.
         if input_metadata.use_cuda_graph:
@@ -589,8 +583,6 @@ class ModelRunner:
                                          input_metadata=input_metadata,
                                          **extra_kwargs)
 
-        sampling_metadata = self._prepare_sample(seq_group_metadata_list,
-                                                 input_metadata.prompt_lens)
         # Sample the next token.
         output = self.model.sample(
             hidden_states=hidden_states,

@@ -115,4 +115,6 @@ class LLaVAEngine(LLMEngine):
             runner_method="execute_llava_model",
         ) if not scheduler_outputs.is_empty() else []
 
+        output = output[0]
+
         return self._process_model_outputs(output, scheduler_outputs)
