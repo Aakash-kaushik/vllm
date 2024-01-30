@@ -110,6 +110,7 @@ class Worker:
         # Profile the memory usage of the model and get the maximum number of
         # cache blocks that can be allocated with the remaining free memory.
         torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
 
         # Execute a forward pass with dummy inputs to profile the memory usage
         # of the model.
@@ -119,8 +120,9 @@ class Worker:
         # profiled peak memory.
         torch.cuda.synchronize()
         free_gpu_memory, total_gpu_memory = torch.cuda.mem_get_info()
-        peak_memory = total_gpu_memory - free_gpu_memory
-
+        # peak_memory = total_gpu_memory - free_gpu_memory #
+        # if the GPU memory is consumed by others before, the peak_memory is the total consumed memory, that is not what we want.
+        peak_memory = torch.cuda.max_memory_allocated()
         cache_block_size = CacheEngine.get_cache_block_size(
             block_size, cache_dtype, self.model_config, self.parallel_config)
         num_gpu_blocks = int(
@@ -210,8 +212,8 @@ class Worker:
         if num_seq_groups == 0:
             return {}
 
-        output = self.model_runner.execute_model(seq_group_metadata_list,
-                                                 self.gpu_cache)
+        output = self.model_runner.__getattribute__(runner_method)(
+            seq_group_metadata_list, self.gpu_cache)
         return output
 
     def add_lora(self, lora_request: LoRARequest) -> bool:
@@ -222,6 +224,19 @@ class Worker:
 
     def list_loras(self) -> Set[int]:
         return self.model_runner.list_loras()
+
+    @torch.inference_mode()
+    def execute_model_methord(
+        self,
+        model_methord: str,
+        *args,
+        **kwargs,
+    ):
+        """Directly execute some none distributed model methord. Just a temporary hack.
+        For the image token replace of the llava model.
+        """
+        return self.model_runner.model.__getattribute__(model_methord)(
+            *args, **kwargs)
 
 
 def init_distributed_environment(

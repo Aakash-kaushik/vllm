@@ -82,6 +82,12 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.txt
 #################### RUNTIME BASE IMAGE ####################
 
+FROM vllm-base as vllm-llava
+
+COPY --from=build /workspace/vllm/*.so /workspace/vllm/
+COPY vllm vllm
+
+ENTRYPOINT ["python3", "-m", "vllm.entrypoints.llava_server"]
 
 #################### OPENAI API SERVER ####################
 # openai api server alternative
