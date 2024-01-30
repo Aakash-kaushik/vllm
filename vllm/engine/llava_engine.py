@@ -63,10 +63,9 @@ class LLaVAEngine(LLMEngine):
 
         # Check the validation of the input. And expand each image token to the
         # number of tokens per image. So the scheduler can allocate proper resources.
-        num_workers = len(self.workers)
-        print(f'num_workers: {num_workers}')
+        # num_workers = len(self.workers)
         # random select a worker
-        worker = self.workers[np.random.randint(num_workers)]
+        worker = self.driver_worker
         if self.parallel_config.worker_use_ray:
             execute_model_methord = partial(worker.execute_method.remote,
                                             'execute_model_methord')
