@@ -33,7 +33,7 @@ class OpenAIServingChat(OpenAIServing):
         self._load_chat_template(chat_template)
         self.model_type = model_type
 
-    def read_image(image=None):
+    def read_image(self, image=None):
         from io import BytesIO
         from PIL import Image
         import base64
@@ -70,7 +70,7 @@ class OpenAIServingChat(OpenAIServing):
             return self.create_error_response(
                 "logit_bias is not currently supported")
 
-        chat_config = request.chat_config
+        chat_config = request.chat_config if request.chat_config else {}
         prompt = ""
         try:
             images = []
@@ -98,6 +98,8 @@ class OpenAIServingChat(OpenAIServing):
                                 prompt += f"{content['text']}\n"
 
                 prompt += chat_config.get("assistant_prefix", "ASSISTANT:\n")
+
+                print("PROMPT "*5, prompt)
             else:
                 prompt = self.tokenizer.apply_chat_template(
                     conversation=request.messages,
@@ -112,14 +114,17 @@ class OpenAIServingChat(OpenAIServing):
         request_id = f"cmpl-{random_uuid()}"
 
         try:
+            # if not self.model_type == "vision":
+            #     token_ids = None
+            # else:
             token_ids = self._validate_prompt_and_tokenize(request,
-                                                           prompt=prompt)
+                                                            prompt=prompt)
             sampling_params = request.to_sampling_params()
         except ValueError as e:
             return self.create_error_response(str(e))
 
         result_generator = self.engine.generate(prompt, sampling_params,
-                                                request_id, token_ids)
+                                                request_id, token_ids, images=images)
         # Streaming response
         if request.stream:
             return self.chat_completion_stream_generator(
