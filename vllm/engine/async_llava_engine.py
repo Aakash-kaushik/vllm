@@ -3,6 +3,7 @@ from vllm.engine.async_llm_engine import AsyncLLMEngine, _AsyncLLMEngine, AsyncS
 import asyncio
 import time
 from typing import (List, Optional, Type, AsyncIterator)
+
 from PIL import Image
 from vllm.logger import init_logger
 from vllm.outputs import RequestOutput
@@ -40,7 +41,24 @@ class _AsyncLLaVAEngine(LLaVAEngine, _AsyncLLMEngine):
             runner_method="execute_llava_model",
         )) if not scheduler_outputs.is_empty() else []
 
+        output = output[0] if len(output) >= 1 else output
+
         return self._process_model_outputs(output, scheduler_outputs)
+
+    async def add_request_async(
+            self,
+            request_id: str,
+            prompt: Optional[str],
+            sampling_params: SamplingParams,
+            prompt_token_ids: Optional[List[int]] = None,
+            arrival_time: Optional[float] = None,
+            images: Optional[List[Image.Image]] = None) -> AsyncStream:
+        return self.add_request(request_id,
+                                prompt,
+                                sampling_params,
+                                prompt_token_ids=prompt_token_ids,
+                                arrival_time=arrival_time,
+                                images=images)
 
 
 class AsyncLLaVAEngine(AsyncLLMEngine):
@@ -96,7 +114,9 @@ class AsyncLLaVAEngine(AsyncLLMEngine):
         sampling_params: SamplingParams,
         request_id: str,
         prompt_token_ids: Optional[List[int]] = None,
-        images: Optional[List[Image.Image]] = None
+        images: Optional[List[Image.Image]] = None,
+        *args,
+        **kwargs,
     ) -> AsyncIterator[RequestOutput]:
         """Generate outputs for a request.
 

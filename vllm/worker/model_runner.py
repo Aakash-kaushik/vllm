@@ -445,7 +445,7 @@ class ModelRunner:
                 (input_tokens, input_positions, input_metadata, prompt_lens,
                  subquery_lens, lora_index_mapping, lora_prompt_mapping,
                  lora_requests) = self._prepare_prompt(seq_group_metadata_list)
-                    # Collect extra data for each prompt from seq_group_metadata_list. e.g. image pixel values, image features
+                # Collect extra data for each prompt from seq_group_metadata_list. e.g. image pixel values, image features
                 if input_tokens.shape[1] > 1:
                     extra_kwargs = defaultdict(
                         lambda: [None for _ in range(input_tokens.shape[0])])
@@ -569,7 +569,7 @@ class ModelRunner:
         # all decodes.
         # Prepare input tensors.
         input_tokens, input_positions, input_metadata, sampling_metadata, lora_requests, lora_mapping, extra_kwargs = (
-        self.prepare_input_tensors(seq_group_metadata_list))
+            self.prepare_input_tensors(seq_group_metadata_list))
 
         # Execute the model.
         if input_metadata.use_cuda_graph:

@@ -1,10 +1,11 @@
 import asyncio
 import time
 from fastapi import Request
-from typing import AsyncGenerator, AsyncIterator, Callable, List, Optional
+from typing import AsyncGenerator, AsyncIterator, Callable, List, Optional, Union
 from vllm.logger import init_logger
 from vllm.utils import random_uuid
 from vllm.engine.async_llm_engine import AsyncLLMEngine
+from vllm.engine.async_llava_engine import AsyncLLaVAEngine
 from .protocol import (
     CompletionRequest,
     CompletionResponse,
@@ -249,7 +250,8 @@ def merge_async_iterators(*iterators):
 
 class OpenAIServingCompletion(OpenAIServing):
 
-    def __init__(self, engine: AsyncLLMEngine, served_model: str):
+    def __init__(self, engine: Union[AsyncLLMEngine, AsyncLLaVAEngine],
+                 served_model: str):
         super().__init__(engine=engine, served_model=served_model)
 
     async def create_completion(self, request: CompletionRequest,

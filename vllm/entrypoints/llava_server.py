@@ -80,6 +80,7 @@ async def generate(request: Request) -> Response:
             text_outputs = [
                 prompt + output.text for output in request_output.outputs
             ]
+            print(text_outputs)
             ret = {"text": text_outputs}
             yield (json.dumps(ret) + "\0").encode("utf-8")
 
@@ -111,6 +112,8 @@ if __name__ == "__main__":
 
     engine_args = AsyncEngineArgs.from_cli_args(args)
     engine = AsyncLLaVAEngine.from_engine_args(engine_args)
+    print("engine created")
+    print(type(engine))
 
     uvicorn.run(app,
                 host=args.host,

@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse, StreamingResponse, Response
 
 from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
+from vllm.engine.async_llava_engine import AsyncLLaVAEngine
 from vllm.engine.metrics import add_global_metrics_labels
 from vllm.entrypoints.openai.protocol import CompletionRequest, ChatCompletionRequest, ErrorResponse
 from vllm.logger import init_logger
@@ -115,6 +116,13 @@ def parse_args():
         "The value should be an import path. "
         "If a function is provided, vLLM will add it to the server using @app.middleware('http'). "
         "If a class is provided, vLLM will add it to the server using app.add_middleware(). "
+    )
+    parser.add_argument(
+        "--model-type",
+        type=str,
+        default=None,
+        help=
+        "The model type. If not specified, LLM engine would be defaulted, choose 'vision' for LLAVA engine"
     )
 
     parser = AsyncEngineArgs.add_cli_args(parser)
@@ -214,10 +222,14 @@ if __name__ == "__main__":
         served_model = args.model
 
     engine_args = AsyncEngineArgs.from_cli_args(args)
-    engine = AsyncLLMEngine.from_engine_args(engine_args)
+    if args.model_type == "vision":
+        engine = AsyncLLaVAEngine.from_engine_args(engine_args)
+    else:
+        engine = AsyncLLMEngine.from_engine_args(engine_args)
     openai_serving_chat = OpenAIServingChat(engine, served_model,
                                             args.response_role,
-                                            args.chat_template)
+                                            args.chat_template,
+                                            args.model_type)
     openai_serving_completion = OpenAIServingCompletion(engine, served_model)
 
     # Register labels for metrics

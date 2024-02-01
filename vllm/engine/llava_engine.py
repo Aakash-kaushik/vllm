@@ -9,7 +9,6 @@ from vllm.outputs import RequestOutput
 from vllm.sampling_params import SamplingParams
 from vllm.sequence import (Sequence, SequenceGroup)
 from PIL import Image
-import numpy as np
 
 
 class LLaVAEngine(LLMEngine):
@@ -65,6 +64,7 @@ class LLaVAEngine(LLMEngine):
         # number of tokens per image. So the scheduler can allocate proper resources.
         # num_workers = len(self.workers)
         # random select a worker
+        # [NOTE]Aakash: Make it work on split model and multiple workers(test)
         worker = self.driver_worker
         if self.parallel_config.worker_use_ray:
             execute_model_methord = partial(worker.execute_method.remote,

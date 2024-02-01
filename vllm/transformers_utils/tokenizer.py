@@ -109,11 +109,11 @@ class TokenizerGroup:
                lora_request: Optional[LoRARequest] = None) -> List[int]:
         tokenizer = self.get_lora_tokenizer(lora_request)
         return tokenizer.encode(prompt)
-    
+
     def decode(self,
-                token_ids: List[int],
-                request_id: Optional[str] = None,
-                lora_request: Optional[LoRARequest] = None) -> str:
+               token_ids: List[int],
+               request_id: Optional[str] = None,
+               lora_request: Optional[LoRARequest] = None) -> str:
         tokenizer = self.get_lora_tokenizer(lora_request)
         return tokenizer.decode(token_ids)
 
