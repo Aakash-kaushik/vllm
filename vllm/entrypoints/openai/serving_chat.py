@@ -42,6 +42,8 @@ class OpenAIServingChat(OpenAIServing):
 
             if image.startswith("http"):
                 return (Image.open(requests.get(image, stream=True).raw))
+            elif image.startswith("data:"):
+                return (Image.open(BytesIO(base64.b64decode(image.split(",")[1]))))
             else:
                 return (Image.open(BytesIO(base64.b64decode(image))))
         else:
